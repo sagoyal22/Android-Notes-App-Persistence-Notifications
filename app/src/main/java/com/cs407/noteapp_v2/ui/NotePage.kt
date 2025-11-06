@@ -468,7 +468,7 @@ fun NoteListPage(
 
     // TODO: milestone 1 step 1 --- Pre-install notes for testing ---
 
-    // TODO: milestone 1 step 4-5, 11
+    // TODO: milestone 1 step 4-5, 8, 11
     val noteList: List<NoteSummary>
 
     val onSearch: (String) -> Unit = {
