@@ -152,6 +152,7 @@ fun convertToUTC(date: Date): Date {
     return utcDate.time
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SimpleDateFormat")
 @Composable
 fun InputRemindDateChip(
@@ -160,15 +161,128 @@ fun InputRemindDateChip(
     onTimeSelected: (Date?, Int?, Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.testTag(stringResource(R.string.reminder_chip))) {
-        // TODO: milestone 2 step 6.
-        // Put your Date Selection Chip implementation here, don't delete Box.
+    var showDate by remember { mutableStateOf(false) }
+    var showTime by remember { mutableStateOf(false) }
+
+    // Text on the chip
+    val label = remember(time) {
+        if (time == null) "Select remind date"
+        else SimpleDateFormat("E MMM dd HH:mm").format(time)
     }
-}
+
+    Box(modifier = modifier.testTag(stringResource(R.string.reminder_chip))) {
+        InputChip(
+            selected = time != null,
+            onClick = { showDate = true },
+            label = { Text(label) },
+            leadingIcon = {
+                Icon(
+                    Icons.Filled.CalendarMonth,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                // TODO: milestone 2 step 6.
+                // Put your Date Selection Chip implementation here, don't delete Box.
+            },
+            colors = InputChipDefaults.inputChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        )
+        // ----- Date Picker -----
+        if (showDate) {
+            val initialUTC = convertToUTC(time ?: Calendar.getInstance().time)
+            val dateState = rememberDatePickerState(initialSelectedDateMillis = initialUTC.time)
+
+            DatePickerDialog(
+                onDismissRequest = { showDate = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onDateSelected(time, dateState.selectedDateMillis)
+                        showDate = false
+                        showTime = true // open Time Picker next
+                    }) { Text(stringResource(R.string.OK_button)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDate = false }) {
+                        Text(stringResource(R.string.cancel_button))
+                    }
+                }
+            ) {
+                DatePicker(state = dateState)
+            }
+        }
+
+        if (showTime) {
+            val base = time ?: Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+            }.time
+
+            val cal = Calendar.getInstance().apply { this.time = base }
+
+            val timeState = remember {
+                TimePickerState(
+                    initialHour = cal.get(Calendar.HOUR_OF_DAY),
+                    initialMinute = cal.get(Calendar.MINUTE),
+                    is24Hour = true
+                )
+            }
+            AlertDialog(
+                onDismissRequest = { showTime = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onTimeSelected(time, timeState.hour, timeState.minute)
+                        showTime = false
+                    }) { Text(stringResource(R.string.OK_button)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showTime = false }) {
+                        Text(stringResource(R.string.cancel_button))
+                    }
+                },
+                text = { TimeInput(state = timeState) }
+            )
+        }
+    }
+    }
+
 
 @Composable
-fun PriorityChip(modifier: Modifier = Modifier, /* Add parameters you want */) {
+fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,                // The selected priority (can be null)
+                 onPrioritySelected: (Priority) -> Unit ) {
+    var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier.testTag(stringResource(R.string.priority_chip))) {
+        InputChip(
+            selected = expanded,
+            onClick = { expanded = !expanded },
+            label = {
+                Text(
+                    text = currentPriority?.name ?: stringResource(R.string.priority_chip),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            colors = InputChipDefaults.inputChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        )
+        {
+            Priority.values().forEach {priority ->
+                DropdownMenuItem(
+                    text = { Text(priority.name) },
+                    onClick = {
+                        onPrioritySelected(priority)
+                        expanded = false
+                    }
+                )
+
+            }
+            }
         // TODO: milestone 2 step 5.
         // Put your Priority Chip implementation here, don't delete Box.
     }
@@ -180,26 +294,60 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
     val context = LocalContext.current
     val noteDB = NoteDatabase.getDatabase(context)
     val scope = rememberCoroutineScope()
+    var selectedPriority by remember { mutableStateOf<Priority?>(null) }
+    var remindDate by remember { mutableStateOf<Date?>(null) }
+
+
 
     var title by rememberSaveable { mutableStateOf("") }
     var detail by rememberSaveable { mutableStateOf("") }
     var detailFocused by remember { mutableStateOf(false) }
     val isNew = noteId == 0
+    
+
+    val onDateSelected: (Date?, Long?) -> Unit = { oldDate, selectedDateMillis ->
+        val newCal = Calendar.getInstance()
+        if (oldDate != null) newCal.time = oldDate
+        if (selectedDateMillis != null) {
+            val pickedUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                time = Date(selectedDateMillis)
+            }
+            newCal.set(Calendar.YEAR, pickedUTC.get(Calendar.YEAR))
+            newCal.set(Calendar.MONTH, pickedUTC.get(Calendar.MONTH))
+            newCal.set(Calendar.DATE, pickedUTC.get(Calendar.DATE))
+            if (oldDate == null) {
+                newCal.set(Calendar.HOUR_OF_DAY, 0)
+                newCal.set(Calendar.MINUTE, 0)
+            }
+        }
+        remindDate = newCal.time
+    }
+
+    val onTimeSelected: (Date?, Int?, Int?) -> Unit = { oldDate, h, m ->
+        val cal = Calendar.getInstance()
+        if (oldDate != null) cal.time = oldDate else cal.time = Calendar.getInstance().time
+        if (h != null && m != null) {
+            cal.set(Calendar.HOUR_OF_DAY, h)
+            cal.set(Calendar.MINUTE, m)
+            remindDate = cal.time
+        }
+    }
 
     // TODO: milestone 2 step 2: complete all the ui-related stuff inside Scaffold
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { /* empty on purpose */ },
-            navigationIcon = {
-                IconButton(onClick = navBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null
-                    )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { /* empty on purpose */ },
+                navigationIcon = {
+                    IconButton(onClick = navBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
                 }
-            }
-        )
-    },
+            )
+        },
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -213,8 +361,8 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
                             noteId = noteId,
                             title = title,
                             detail = detail,
-                            priority = null,          // step 3 ignores priority
-                            remindDate = null,        // step 3 ignores remind date
+                            priority = selectedPriority?.ordinal ?: -1,
+                            remindDate = null,
                             noteDB = noteDB,
                             context = context,
                             coroutineScope = scope,
@@ -237,7 +385,7 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
         ) {
             BasicTextField(
                 value = title,
-                onValueChange = {title = it   },
+                onValueChange = { title = it },
                 textStyle = TextStyle(
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
@@ -249,7 +397,7 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
                     .padding(12.dp)
                     .fillMaxWidth()
                     .testTag(stringResource(R.string.note_title_input)),
-                decorationBox = {inner ->
+                decorationBox = { inner ->
                     Box {
                         if (title.isBlank()) {
                             Text(
@@ -264,11 +412,26 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
 
                 }
             )
+
+
             HorizontalDivider(thickness = 1.dp, modifier = Modifier.padding(10.dp))
+
+            Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+                InputRemindDateChip(
+                    time = remindDate,
+                    onDateSelected = onDateSelected,
+                    onTimeSelected = onTimeSelected,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                );
+                PriorityChip(
+                    currentPriority = selectedPriority,
+                    onPrioritySelected = { selectedPriority = it }
+                )
+            }
             // ...
             BasicTextField(
-                value =  detail,
-                onValueChange = { detail = it},
+                value = detail,
+                onValueChange = { detail = it },
                 textStyle = TextStyle(
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -295,8 +458,9 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
 
                 }
 
-                )
+            )
         }
         Spacer(modifier = Modifier.padding(bottom = 80.dp))
     }
+
 }

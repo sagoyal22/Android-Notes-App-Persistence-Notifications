@@ -402,7 +402,7 @@ fun NoteSearchBar(
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 4.dp)
                 .combinedClickable(onClick = { onClick(noteSummary.noteId) }, onLongClick = {
-                    TODO()
+                    onDelete()
                 }), elevation = CardDefaults.cardElevation(
                 defaultElevation = 6.dp
             ),
@@ -442,6 +442,9 @@ fun NoteSearchBar(
         modifier: Modifier = Modifier,
         onClick: (Int) -> Unit,
         navOut: () -> Unit,
+
+
+
         viewModel: NoteListViewModel = viewModel()
     ) {
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -452,6 +455,7 @@ fun NoteSearchBar(
         val noteDB = NoteDatabase.getDatabase(context)
         val preferKV = PreferenceKV(context, userState.uid)
         val preferState by preferKV.appPreferencesFlow.collectAsState(AppPreferences())
+
 
         var sortOrder: Sort = preferState.sorting// TODO: milestone 1 step 10
 
@@ -520,6 +524,7 @@ fun NoteSearchBar(
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun NoteListPage(
         preferState: AppPreferences,
@@ -532,8 +537,17 @@ fun NoteSearchBar(
         navOut: () -> Unit,
         viewModel: NoteListViewModel = viewModel()
 
+
     ) {
         var searchPattern by rememberSaveable { mutableStateOf("") }
+        val scope = rememberCoroutineScope()
+
+        var showDeleteSheet by rememberSaveable { mutableStateOf(false) }
+        var deleteNoteId by remember { mutableStateOf<Int?>(null) }
+        var deleteNoteTitle by remember { mutableStateOf("") }
+
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
 
 
         // TODO: milestone 1 step 1 --- Pre-install notes for testing ---
@@ -621,15 +635,57 @@ fun NoteSearchBar(
                             noteSummary = summary,
                             noteDB = noteDB,
                             onClick = { onClick(summary.noteId) },
-                            onDelete = { /* Step 7 later */ }
+                            onDelete = {
+                                deleteNoteId = summary.noteId
+                                deleteNoteTitle = summary.noteTitle
+                                showDeleteSheet = true
+                            }
                         )
+
                             }
                     }
 
                 }
+
             }
 
+
     }
+
+
+        if (showDeleteSheet && deleteNoteId != null) {
+            ModalBottomSheet(
+                sheetState = sheetState,
+                onDismissRequest = { showDeleteSheet = false }
+            ) {
+                Text(
+                    text = "Delete Note: $deleteNoteTitle",
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+                HorizontalDivider()
+
+                ListItem(
+                    leadingContent = { Icon(Icons.Default.Delete, contentDescription = "Delete Note") },
+                    headlineContent = { Text(text = "Delete Note: $deleteNoteTitle",fontWeight = FontWeight.Bold) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val id = deleteNoteId!!
+                            scope.launch {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    noteDB.deleteDao().delete(id)
+                                }
+                                showDeleteSheet = false
+                                deleteNoteId = null
+                            }
+                        }
+                )
+                Spacer(Modifier.height(24.dp))
+            }
+        }
+
+
+
 }
 
 
