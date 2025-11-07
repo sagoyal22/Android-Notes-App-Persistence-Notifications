@@ -12,6 +12,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+@Serializable
 enum class Sort(val sort: Int, val sortBy: String, val label: String) {
     NOTE_ID_DESC(0, "noteID", "Sort by Note ID descending"),
     NOTE_ID_ASC(1, "noteID", "Sort by Note ID ascending"),
@@ -28,6 +29,7 @@ enum class Sort(val sort: Int, val sortBy: String, val label: String) {
 @Serializable
 data class AppPreferences (
     var greeting: String = "Welcome",
+    var sorting: Sort = Sort.LAST_EDITED_DESC
     // TODO: milestone 1 step 9-1
 )
 
@@ -44,15 +46,13 @@ class PreferenceKV(private val context: Context, private val userUID: String) {
 
     val appPreferencesFlow = context.dataStore.data.map { preferences ->
         val jsonString = preferences[userUIDPre] ?: """
-            {
-                "${PreferenceKeys.GREETING}": "Welcome"
-            }
-        """.trimIndent()
-        // TODO: add "${PreferenceKeys.SORTING}": ${Json.encodeToString(Sort.LAST_EDITED_DESC)} to jsonString
-        val appPrefer: AppPreferences = Json.decodeFromString(jsonString)
-        appPrefer
+        {
+          "greeting": "Welcome",
+          "sorting": ${Json.encodeToString(Sort.LAST_EDITED_DESC)}
+        }
+    """.trimIndent()
+        Json.decodeFromString<AppPreferences>(jsonString)
     }
-
     suspend fun saveGreeting(greeting: String) {
         context.dataStore.edit { preferences ->
             val jsonString = preferences[userUIDPre] ?: "{}"
@@ -64,7 +64,10 @@ class PreferenceKV(private val context: Context, private val userUID: String) {
 
     suspend fun saveSorting(sort: Sort) {
         context.dataStore.edit { preferences ->
-            // TODO: milestone 1 step 9-2
+            val jsonString = preferences[userUIDPre] ?: Json.encodeToString(AppPreferences())
+            val appPrefer  = Json.decodeFromString<AppPreferences>(jsonString)
+            appPrefer.sorting = sort
+            preferences[userUIDPre] = Json.encodeToString(AppPreferences.serializer(), appPrefer)
         }
     }
 }

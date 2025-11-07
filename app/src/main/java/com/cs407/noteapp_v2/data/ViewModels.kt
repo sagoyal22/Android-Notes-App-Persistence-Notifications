@@ -41,20 +41,24 @@ class NoteListViewModel : ViewModel() { // milestone 1 step 1
     val noteListState = _noteListState.asStateFlow()
 
     fun updateListFlow(state: Flow<List<NoteSummary>>) {
-        // milestone 1 step 2
-    }
-
-    fun updateList(state: List<NoteSummary>) {
-        _noteListState.update {
-            state
+        viewModelScope.launch {
+            state.collect { curState ->
+                _noteListState.value = curState
+            }
+            // milestone 1 step 2
         }
-    }
 
-    fun delList(pos: Int) {
-        _noteListState.update { currentState ->
-            val currentList = currentState.toMutableList()
-            currentList.removeAt(pos)
-            currentList.toList()
+        fun updateList(state: List<NoteSummary>) {
+            _noteListState.update {
+                state
+            }
         }
-    }
-}
+
+        fun delList(pos: Int) {
+            _noteListState.update { currentState ->
+                val currentList = currentState.toMutableList()
+                currentList.removeAt(pos)
+                currentList.toList()
+            }
+        }
+    }}

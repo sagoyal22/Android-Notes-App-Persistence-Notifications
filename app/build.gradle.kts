@@ -5,6 +5,7 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
     kotlin("plugin.serialization") version "2.2.20"
+
 }
 
 android {
@@ -117,4 +118,5 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("test"))
+    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
 }
