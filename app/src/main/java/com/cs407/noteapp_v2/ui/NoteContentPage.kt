@@ -76,7 +76,9 @@ import java.util.Date
 import java.util.TimeZone
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.withContext
 
+private const val LARGE_NOTE_THRESHOLD = 1024
 fun saveContent(
     userId: Int,
     noteId: Int,
@@ -90,6 +92,51 @@ fun saveContent(
     navBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    coroutineScope.launch {
+        // Build the Note and upsert on IO
+        withContext(Dispatchers.IO) {
+            val now = Calendar.getInstance().time
+            // noteAbstract: first 20 chars of first line of detail
+            val firstLine = detail.lineSequence().firstOrNull().orEmpty()
+            val noteAbstract = firstLine.take(20)
+
+            // If content is small, keep it inline; else write to file.
+            val isLarge = detail.length > LARGE_NOTE_THRESHOLD
+            var inlineDetail: String? = if (isLarge) null else detail
+            var notePath: String? = null
+
+
+            val note = Note(
+                noteId = noteId,
+                noteTitle = title.ifBlank { "New Note" },
+                noteAbstract = noteAbstract,
+                noteDetail = inlineDetail,
+                notePath = null,                                   // ignore per spec
+                lastEdited = now,          // now
+                priority = -1,                                     // ignore per spec
+                remindDate = null                                  // ignore per spec
+            )
+
+            // Upsert and link to userId (Room impl handles insert vs update)
+            val realId = noteDB.noteDao().upsertNote(note, userId)
+
+
+            if (isLarge) {
+                val safeName = "note-$userId-$realId-$now"
+                    .replace(" ", "_")
+                    .replace(":", "_")
+                val file = File(context.filesDir, safeName)
+                file.writeText(detail)
+                notePath = file.absolutePath
+
+                val updated = note.copy(noteId = realId, notePath = notePath, lastEdited = now)
+                noteDB.noteDao().upsertNote(updated, userId)
+            }
+        }
+
+        // Back to the list after save
+        navBack()
+    }
     // TODO: milestone 2 step 3
 }
 
@@ -127,6 +174,7 @@ fun PriorityChip(modifier: Modifier = Modifier, /* Add parameters you want */) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -139,15 +187,57 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
     val isNew = noteId == 0
 
     // TODO: milestone 2 step 2: complete all the ui-related stuff inside Scaffold
-    Scaffold(topBar = { /* ... */ }, bottomBar = { /* ... */ }) { innerPadding ->
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { /* empty on purpose */ },
+            navigationIcon = {
+                IconButton(onClick = navBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null
+                    )
+                }
+            }
+        )
+    },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Button(
+                    onClick = {
+                        saveContent(
+                            userId = userId,
+                            noteId = noteId,
+                            title = title,
+                            detail = detail,
+                            priority = null,          // step 3 ignores priority
+                            remindDate = null,        // step 3 ignores remind date
+                            noteDB = noteDB,
+                            context = context,
+                            coroutineScope = scope,
+                            navBack = navBack
+                        )
+                    },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.save_button))
+                }
+            }
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
             BasicTextField(
-                value = "",
-                onValueChange = {  },
+                value = title,
+                onValueChange = {title = it   },
                 textStyle = TextStyle(
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
@@ -156,25 +246,57 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
                 singleLine = true,
                 modifier = Modifier
-                    .padding(9.dp)
+                    .padding(12.dp)
                     .fillMaxWidth()
-                    .testTag(stringResource(R.string.note_title_input))
+                    .testTag(stringResource(R.string.note_title_input)),
+                decorationBox = {inner ->
+                    Box {
+                        if (title.isBlank()) {
+                            Text(
+                                text = if (isNew) "New Note" else "",
+                                fontSize = 30.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        inner()
+                    }
+
+                }
             )
             HorizontalDivider(thickness = 1.dp, modifier = Modifier.padding(10.dp))
             // ...
             BasicTextField(
-                value = stringResource(R.string.note_content_placeholder),
-                onValueChange = { },
+                value =  detail,
+                onValueChange = { detail = it},
                 textStyle = TextStyle(
                     fontSize = 20.sp,
-                    color = Color.Unspecified, // ...
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Normal // ...
                 ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
                 modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxWidth() // ...
-                    .testTag(stringResource(R.string.note_content_input)))
+                    .padding(12.dp)
+                    .fillMaxWidth()
+                    .onFocusChanged { detailFocused = it.isFocused }
+                    .testTag(stringResource(R.string.note_content_input)),
+                decorationBox = { inner ->
+                    Box {
+                        if (isNew && !detailFocused && detail.isBlank()) {
+                            Text(
+                                text = stringResource(R.string.note_content_placeholder), // “Write here”
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Thin
+                            )
+                        }
+                        inner()
+                    }
+
+                }
+
+                )
         }
+        Spacer(modifier = Modifier.padding(bottom = 80.dp))
     }
 }
