@@ -87,7 +87,8 @@ fun saveContent(
     noteDB: NoteDatabase,
     context: Context,
     coroutineScope: CoroutineScope,
-    navBack: () -> Unit
+    navBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     // TODO: milestone 2 step 3
 }
@@ -128,6 +129,14 @@ fun PriorityChip(modifier: Modifier = Modifier, /* Add parameters you want */) {
 
 @Composable
 fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val noteDB = NoteDatabase.getDatabase(context)
+    val scope = rememberCoroutineScope()
+
+    var title by rememberSaveable { mutableStateOf("") }
+    var detail by rememberSaveable { mutableStateOf("") }
+    var detailFocused by remember { mutableStateOf(false) }
+    val isNew = noteId == 0
 
     // TODO: milestone 2 step 2: complete all the ui-related stuff inside Scaffold
     Scaffold(topBar = { /* ... */ }, bottomBar = { /* ... */ }) { innerPadding ->

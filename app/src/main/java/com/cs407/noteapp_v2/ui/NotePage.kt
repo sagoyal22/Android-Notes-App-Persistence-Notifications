@@ -401,7 +401,7 @@ fun NoteSearchBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 4.dp)
-                .combinedClickable(onClick = { onClick(TODO()) }, onLongClick = {
+                .combinedClickable(onClick = { onClick(noteSummary.noteId) }, onLongClick = {
                     TODO()
                 }), elevation = CardDefaults.cardElevation(
                 defaultElevation = 6.dp
@@ -582,7 +582,10 @@ fun NoteSearchBar(
         }
 
         Scaffold(
-            floatingActionButton = { /* TODO: milestone 2 step 1 */ },
+            floatingActionButton = { FloatingActionButton(onClick = { onClick(0) }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "New note")
+            }
+            },
             topBar = { TopBar(navOut, onClickMenu, userState, noteDB) }) { innerPadding ->
             Column(
                 modifier = modifier
@@ -617,7 +620,7 @@ fun NoteSearchBar(
                         NoteCard(
                             noteSummary = summary,
                             noteDB = noteDB,
-                            onClick = onClick,
+                            onClick = { onClick(summary.noteId) },
                             onDelete = { /* Step 7 later */ }
                         )
                             }

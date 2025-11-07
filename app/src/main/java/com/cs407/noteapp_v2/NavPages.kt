@@ -71,12 +71,35 @@ fun NoteApp(
             }
         }
         composable(route = NoteScreen.NoteList.name) {
-            NotePage(userState, Modifier, {
-                // TODO: milestone 2 step 1
+            NotePage(userState, Modifier, {noteId ->
+                navController.navigate("${NoteScreen.NoteContent.name}/$noteId")
             }, {
                 Firebase.auth.signOut()
             })
         }
         // TODO: milestone 2 step 1
+        composable( route = "${NoteScreen.NoteContent.name}/{noteId}",
+            arguments = listOf(navArgument("noteId") { type = NavType.IntType })) {
+                backStackEntry ->
+            val noteId = backStackEntry.arguments?.getInt("noteId") ?: 0
+            NoteContentPage(
+                userId = userState.id,                          // pass current user
+                noteId = noteId,
+                navBack = { navController.popBackStack() }      // back to list
+            )
+        }
+
+        composable(
+            route = "${NoteScreen.NoteContent.name}/{noteId}",
+            arguments = listOf(navArgument("noteId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getInt("noteId") ?: 0
+            NoteContentPage(
+                userId = userState.id,
+                noteId = noteId,
+                navBack = { navController.popBackStack() }
+            )
+        }
+
     }
 }
