@@ -115,6 +115,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.Locale
 
@@ -658,25 +659,21 @@ fun NoteSearchBar(
                 sheetState = sheetState,
                 onDismissRequest = { showDeleteSheet = false }
             ) {
-                Text(
-                    text = "Delete Note: $deleteNoteTitle",
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                )
-                HorizontalDivider()
 
                 ListItem(
-                    leadingContent = { Icon(Icons.Default.Delete, contentDescription = "Delete Note") },
-                    headlineContent = { Text(text = "Delete Note: $deleteNoteTitle",fontWeight = FontWeight.Bold) },
+                    leadingContent = { Icon(Icons.Default.Delete, contentDescription = "Delete Note", tint = Color.Red) },
+                    headlineContent = { Text(text = "Delete Note: $deleteNoteTitle",fontWeight = FontWeight.Bold ,color = Color.Red) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            val id = deleteNoteId!!
+                            val id = deleteNoteId?: return@clickable
                             scope.launch {
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    noteDB.deleteDao().delete(id)
+                                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    noteDB.deleteDao().deleteNotes(listOf(id))   // <-- delete a single note
                                 }
                                 showDeleteSheet = false
                                 deleteNoteId = null
+                                deleteNoteTitle = ""
                             }
                         }
                 )
