@@ -1,7 +1,6 @@
 package com.cs407.noteapp_v2.ui
 
 import android.annotation.SuppressLint
-import android.text.TextUtils.replace
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -17,32 +16,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sort
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -54,6 +42,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
@@ -66,6 +55,7 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -83,13 +73,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -113,8 +98,6 @@ import com.cs407.noteapp_v2.data.Priority
 import com.cs407.noteapp_v2.data.Sort
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.Locale
@@ -389,6 +372,14 @@ fun NoteSearchBar(
         )
     }
 
+@Composable
+private fun priorityColor(priority: Int?): Color = when (priority) {
+    Priority.HIGH.ordinal -> MaterialTheme.colorScheme.errorContainer      // red-ish
+    Priority.MEDIUM.ordinal -> MaterialTheme.colorScheme.tertiaryContainer // yellow-ish
+    Priority.LOW.ordinal -> MaterialTheme.colorScheme.secondaryContainer   // green-ish
+    else -> MaterialTheme.colorScheme.surfaceVariant
+}
+
     @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
     @SuppressLint("SimpleDateFormat")
     @Composable
@@ -397,6 +388,9 @@ fun NoteSearchBar(
     ) {
         val pattern = "yyyy-MM-dd HH:mm"
         val dateFormatter = SimpleDateFormat(pattern, Locale.getDefault())
+        val bg = priorityColor(noteSummary.priority)
+        val fg = contentColorFor(bg)
+
 
         Card(
             modifier = Modifier
@@ -406,9 +400,12 @@ fun NoteSearchBar(
                     onDelete()
                 }), elevation = CardDefaults.cardElevation(
                 defaultElevation = 6.dp
+
             ),
+
             colors = CardDefaults.cardColors(
-                containerColor = Color.Unspecified, // TODO: milestone 2 step 8
+                containerColor = bg,
+                contentColor  = fg
             )
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
@@ -669,7 +666,7 @@ fun NoteSearchBar(
                             val id = deleteNoteId?: return@clickable
                             scope.launch {
                                 withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    noteDB.deleteDao().deleteNotes(listOf(id))   // <-- delete a single note
+                                    noteDB.deleteDao().deleteNotes(listOf(id))
                                 }
                                 showDeleteSheet = false
                                 deleteNoteId = null

@@ -111,10 +111,10 @@ fun saveContent(
                 noteTitle = title.ifBlank { "New Note" },
                 noteAbstract = noteAbstract,
                 noteDetail = inlineDetail,
-                notePath = null,                                   // ignore per spec
+                notePath = notePath,                                   // ignore per spec
                 lastEdited = now,          // now
-                priority = -1,                                     // ignore per spec
-                remindDate = null                                  // ignore per spec
+                priority =  priority ?: -1,                                    // ignore per spec
+                remindDate = remindDate                                  // ignore per spec
             )
 
             // Upsert and link to userId (Room impl handles insert vs update)
@@ -303,7 +303,7 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
     var detail by rememberSaveable { mutableStateOf("") }
     var detailFocused by remember { mutableStateOf(false) }
     val isNew = noteId == 0
-    
+
 
     val onDateSelected: (Date?, Long?) -> Unit = { oldDate, selectedDateMillis ->
         val newCal = Calendar.getInstance()
