@@ -248,8 +248,14 @@ fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,     
             onClick = { expanded = !expanded },
             label = {
                 Text(
-                    text = currentPriority?.name ?: stringResource(R.string.priority_chip),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = currentPriority?.let { p ->
+                        when (p) {
+                            Priority.LOW    -> "Low"
+                            Priority.MEDIUM -> "Medium"
+                            Priority.HIGH   -> "High"
+                            Priority.NONE   -> "Set Priority"
+                        }
+                    } ?: "Set Priority"
                 )
             },
 
@@ -263,19 +269,26 @@ fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,     
             onDismissRequest = { expanded = false }
         )
         {
-            Priority.values().forEach {priority ->
+            DropdownMenuItem(
+                text = { Text("None") },
+                onClick = { onPrioritySelected(Priority.NONE); expanded = false }
+            )
+            listOf(Priority.LOW, Priority.MEDIUM, Priority.HIGH).forEach { priority ->
                 DropdownMenuItem(
-                    text = { Text(priority.name) },
-                    onClick = {
-                        onPrioritySelected(priority)
-                        expanded = false
-                    }
+                    text = {
+                        Text(
+                            when (priority) {
+                                Priority.LOW -> "Low"
+                                Priority.MEDIUM -> "Medium"
+                                Priority.HIGH -> "High"
+                                Priority.NONE -> "None"   // unreachable here but keeps it exhaustive
+                            }
+                        )
+                    },
+                    onClick = { onPrioritySelected(priority); expanded = false }
                 )
-
             }
-            }
-        // TODO: milestone 2 step 5.
-        // Put your Priority Chip implementation here, don't delete Box.
+        }
     }
 }
 
