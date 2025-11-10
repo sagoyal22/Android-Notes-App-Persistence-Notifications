@@ -106,12 +106,12 @@ fun saveContent(
             var notePath: String? = null
 
 
-            val note = Note(
+            val note = com.cs407.noteapp_v2.data.Note(
                 noteId = noteId,
                 noteTitle = title.ifBlank { "New Note" },
                 noteAbstract = noteAbstract,
-                noteDetail = inlineDetail,
-                notePath = notePath,                                   // ignore per spec
+                noteDetail =  if (detail.length > 1024) null else detail,
+                notePath = null,                                   // ignore per spec
                 lastEdited = now,          // now
                 priority =  priority ?: -1,                                    // ignore per spec
                 remindDate = remindDate                                  // ignore per spec
@@ -119,23 +119,13 @@ fun saveContent(
 
             // Upsert and link to userId (Room impl handles insert vs update)
             val realId = noteDB.noteDao().upsertNote(note, userId)
-
-
-            if (isLarge) {
-                val safeName = "note-$userId-$realId-$now"
-                    .replace(" ", "_")
-                    .replace(":", "_")
-                val file = File(context.filesDir, safeName)
-                file.writeText(detail)
-                notePath = file.absolutePath
-
-                val updated = note.copy(noteId = realId, notePath = notePath, lastEdited = now)
-                noteDB.noteDao().upsertNote(updated, userId)
-            }
         }
 
         // Back to the list after save
-        navBack()
+        withContext(kotlinx.coroutines.Dispatchers.Main) {
+            navBack()
+        }
+
     }
     // TODO: milestone 2 step 3
 }

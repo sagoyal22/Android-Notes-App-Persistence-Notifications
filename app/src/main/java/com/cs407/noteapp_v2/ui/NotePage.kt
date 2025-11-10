@@ -600,7 +600,7 @@ private fun priorityColor(priority: Int?): Color = when (priority) {
 
                 val scope = rememberCoroutineScope()
                 FloatingActionButton(
-                    onClick = {  onClick(0)   },
+                    onClick = {  onClick(0)},
                     modifier = Modifier.semantics {
 
                     }
