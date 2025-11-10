@@ -73,6 +73,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -595,8 +597,10 @@ private fun priorityColor(priority: Int?): Color = when (priority) {
 
         Scaffold(
             floatingActionButton = {
+
                 val scope = rememberCoroutineScope()
-                FloatingActionButton(onClick = {
+                FloatingActionButton(
+                    onClick = {
                     scope.launch {
                         val now = Calendar.getInstance().time
                         val newId = withContext(kotlinx.coroutines.Dispatchers.IO){
@@ -616,7 +620,7 @@ private fun priorityColor(priority: Int?): Color = when (priority) {
                         onClick(newId)
                     }
                 }) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "New note")
+                Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_note_button))
             }
             },
             topBar = { TopBar(navOut, onClickMenu, userState, noteDB) }) { innerPadding ->
