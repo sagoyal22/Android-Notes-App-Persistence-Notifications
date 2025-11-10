@@ -600,26 +600,11 @@ private fun priorityColor(priority: Int?): Color = when (priority) {
 
                 val scope = rememberCoroutineScope()
                 FloatingActionButton(
-                    onClick = {
-                    scope.launch {
-                        val now = Calendar.getInstance().time
-                        val newId = withContext(kotlinx.coroutines.Dispatchers.IO){
-                            noteDB.noteDao().upsertNote(
-                                Note(
-                                    noteTitle   = "New Note",
-                                    noteAbstract = "",
-                                    noteDetail   = "",
-                                    notePath     = null,
-                                    lastEdited   = now,
-                                    priority     = -1,
-                                    remindDate   = null
-                                ),
-                                userState.id
-                            )
-                        }
-                        onClick(newId)
+                    onClick = {  onClick(0)   },
+                    modifier = Modifier.semantics {
+
                     }
-                }) {
+                   ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_note_button))
             }
             },

@@ -178,7 +178,7 @@ fun InputRemindDateChip(
             leadingIcon = {
                 Icon(
                     Icons.Filled.CalendarMonth,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.confirm_date),
                     modifier = Modifier.size(16.dp)
                 )
                 // TODO: milestone 2 step 6.
@@ -262,6 +262,7 @@ fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,     
                     color = MaterialTheme.colorScheme.onSurface
                 )
             },
+
             colors = InputChipDefaults.inputChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                 selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
