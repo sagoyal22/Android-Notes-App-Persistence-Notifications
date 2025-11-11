@@ -218,161 +218,161 @@ fun NoteSearchBar(
             }
         }
     }
+}
+
+@Composable
+fun GreetingText(
+    modifier: Modifier = Modifier,
+    name: String = "",
+    greeting: String = "Welcome"
+) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Row(modifier = Modifier.padding(10.dp)) {
+        Text(
+            text = "$greeting ", fontSize = 30.sp
+        )
+        Text(
+            text = name, fontSize = 30.sp, fontStyle = FontStyle.Italic
+        )
+        Text(
+            text = "!",
+            fontSize = 30.sp,
+        )
     }
+}
 
-    @Composable
-    fun GreetingText(
-        modifier: Modifier = Modifier,
-        name: String = "",
-        greeting: String = "Welcome"
-    ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.padding(10.dp)) {
-            Text(
-                text = "$greeting ", fontSize = 30.sp
-            )
-            Text(
-                text = name, fontSize = 30.sp, fontStyle = FontStyle.Italic
-            )
-            Text(
-                text = "!",
-                fontSize = 30.sp,
-            )
-        }
-    }
+@Composable
+fun DropDownList(
+    navLogOut: () -> Unit,
+    userState: UserState,
+    noteDB: NoteDatabase,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    @Composable
-    fun DropDownList(
-        navLogOut: () -> Unit,
-        userState: UserState,
-        noteDB: NoteDatabase,
-        modifier: Modifier = Modifier
-    ) {
-        var expanded by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope()
+    IconButton(onClick = { expanded = !expanded }) {
+        Icon(
+            imageVector = Icons.Filled.MoreVert,
+            contentDescription = stringResource(R.string.vert_description)
+        )
 
-        IconButton(onClick = { expanded = !expanded }) {
-            Icon(
-                imageVector = Icons.Filled.MoreVert,
-                contentDescription = stringResource(R.string.vert_description)
-            )
-
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                DropdownMenuItem(leadingIcon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Logout,
-                        contentDescription = stringResource(R.string.logout_description)
-                    )
-                }, text = { Text(stringResource(R.string.logout_button)) }, onClick = {
-                    navLogOut()
-                })
-                DropdownMenuItem(
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.DeleteOutline,
-                            contentDescription = stringResource(R.string.del_acc_description)
-                        )
-                    }, text = { Text(stringResource(R.string.del_acc_button)) }, onClick = {
-                        scope.launch {
-                            noteDB.deleteDao().delete(userState.id)
-                        }
-                        val user = Firebase.auth.currentUser
-                        user?.delete()
-                    }, colors = MenuDefaults.itemColors(
-                        textColor = Color.Red, leadingIconColor = Color.Red
-                    )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(leadingIcon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Logout,
+                    contentDescription = stringResource(R.string.logout_description)
                 )
-            }
+            }, text = { Text(stringResource(R.string.logout_button)) }, onClick = {
+                navLogOut()
+            })
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.DeleteOutline,
+                        contentDescription = stringResource(R.string.del_acc_description)
+                    )
+                }, text = { Text(stringResource(R.string.del_acc_button)) }, onClick = {
+                    scope.launch {
+                        noteDB.deleteDao().delete(userState.id)
+                    }
+                    val user = Firebase.auth.currentUser
+                    user?.delete()
+                }, colors = MenuDefaults.itemColors(
+                    textColor = Color.Red, leadingIconColor = Color.Red
+                )
+            )
         }
     }
+}
 
-    @Composable
-    fun ChangeGreetingsDialog(
-        showDialog: Boolean,
-        preferState: AppPreferences,
-        preferKV: PreferenceKV,
-        onDismissRequest: () -> Unit
-    ) {
-        var greeting by remember { mutableStateOf(preferState.greeting) }
-        var prevGreeting by remember { mutableStateOf(preferState.greeting) }
+@Composable
+fun ChangeGreetingsDialog(
+    showDialog: Boolean,
+    preferState: AppPreferences,
+    preferKV: PreferenceKV,
+    onDismissRequest: () -> Unit
+) {
+    var greeting by remember { mutableStateOf(preferState.greeting) }
+    var prevGreeting by remember { mutableStateOf(preferState.greeting) }
 
-        if (prevGreeting != preferState.greeting) {
-            greeting = preferState.greeting
-            prevGreeting = preferState.greeting
-        }
+    if (prevGreeting != preferState.greeting) {
+        greeting = preferState.greeting
+        prevGreeting = preferState.greeting
+    }
 
-        if (showDialog) {
-            Dialog(onDismissRequest = { onDismissRequest() }) {
-                Card(
+    if (showDialog) {
+        Dialog(onDismissRequest = { onDismissRequest() }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
+                        .fillMaxSize()
                         .padding(16.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        OutlinedTextField(
-                            value = greeting,
-                            onValueChange = { greeting = it },
-                            label = { Text(stringResource(R.string.greeting_hint)) },
-                            singleLine = true,
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        TextButton(onClick = {
-                            runBlocking {
-                                launch {
-                                    preferKV.saveGreeting(greeting)
-                                }
+                    OutlinedTextField(
+                        value = greeting,
+                        onValueChange = { greeting = it },
+                        label = { Text(stringResource(R.string.greeting_hint)) },
+                        singleLine = true,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    TextButton(onClick = {
+                        runBlocking {
+                            launch {
+                                preferKV.saveGreeting(greeting)
                             }
-                            onDismissRequest()
-                        }) {
-                            Text(stringResource(R.string.confirm_button))
                         }
+                        onDismissRequest()
+                    }) {
+                        Text(stringResource(R.string.confirm_button))
                     }
                 }
             }
         }
     }
+}
 
-    @Composable
-    fun PreferenceMenu(
-        onClickMenu: () -> Unit,
-        modifier: Modifier = Modifier
+@Composable
+fun PreferenceMenu(
+    onClickMenu: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClickMenu,
+        modifier = Modifier.testTag(stringResource(R.string.drawer_menu))
     ) {
-        IconButton(
-            onClick = onClickMenu,
-            modifier = Modifier.testTag(stringResource(R.string.drawer_menu))
-        ) {
-            Icon(Icons.Default.Menu, contentDescription = "Menu")
-        }
+        Icon(Icons.Default.Menu, contentDescription = "Menu")
     }
+}
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun TopBar(
-        navLogOut: () -> Unit,
-        onClickMenu: () -> Unit,
-        userState: UserState,
-        noteDB: NoteDatabase,
-        modifier: Modifier = Modifier
-    ) {
-        TopAppBar(
-            modifier = modifier,
-            title = {},
-            navigationIcon = {
-                PreferenceMenu(onClickMenu)
-            },
-            actions = {
-                DropDownList(navLogOut, userState, noteDB)
-            },
-        )
-    }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopBar(
+    navLogOut: () -> Unit,
+    onClickMenu: () -> Unit,
+    userState: UserState,
+    noteDB: NoteDatabase,
+    modifier: Modifier = Modifier
+) {
+    TopAppBar(
+        modifier = modifier,
+        title = {},
+        navigationIcon = {
+            PreferenceMenu(onClickMenu)
+        },
+        actions = {
+            DropDownList(navLogOut, userState, noteDB)
+        },
+    )
+}
 
 @Composable
 private fun priorityColor(priority: Int?): Color = when (priority) {
@@ -389,263 +389,263 @@ private fun Priority?.toDbInt(): Int = when (this) {
     Priority.HIGH   -> 2
     else            -> -1
 }
-    @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
-    @SuppressLint("SimpleDateFormat")
-    @Composable
-    fun NoteCard(
-        noteSummary: NoteSummary, noteDB: NoteDatabase, onClick: (Int) -> Unit, onDelete: () -> Unit
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@SuppressLint("SimpleDateFormat")
+@Composable
+fun NoteCard(
+    noteSummary: NoteSummary, noteDB: NoteDatabase, onClick: (Int) -> Unit, onDelete: () -> Unit
+) {
+    val pattern = "yyyy-MM-dd HH:mm"
+    val dateFormatter = SimpleDateFormat(pattern, Locale.getDefault())
+    val bg = priorityColor(noteSummary.priority)
+    val fg = contentColorFor(bg)
+
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .combinedClickable(onClick = { onClick(noteSummary.noteId) }, onLongClick = {
+                onDelete()
+            }), elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp
+
+        ),
+
+        colors = CardDefaults.cardColors(
+            containerColor = bg,
+            contentColor  = fg
+        )
     ) {
-        val pattern = "yyyy-MM-dd HH:mm"
-        val dateFormatter = SimpleDateFormat(pattern, Locale.getDefault())
-        val bg = priorityColor(noteSummary.priority)
-        val fg = contentColorFor(bg)
-
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 4.dp)
-                .combinedClickable(onClick = { onClick(noteSummary.noteId) }, onLongClick = {
-                    onDelete()
-                }), elevation = CardDefaults.cardElevation(
-                defaultElevation = 6.dp
-
-            ),
-
-            colors = CardDefaults.cardColors(
-                containerColor = bg,
-                contentColor  = fg
+        Column(modifier = Modifier.padding(10.dp)) {
+            // milestone 1 step 3
+            Text(
+                text = noteSummary.noteTitle,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.testTag(stringResource(R.string.note_title_display))
             )
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                // milestone 1 step 3
+            Row {
                 Text(
-                    text = noteSummary.noteTitle,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.testTag(stringResource(R.string.note_title_display))
+                    text = dateFormatter.format(noteSummary.lastEdited),
+                    fontWeight = FontWeight.Thin
                 )
-                Row {
-                    Text(
-                        text = dateFormatter.format(noteSummary.lastEdited),
-                        fontWeight = FontWeight.Thin
-                    )
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(5.dp)
-                    )
-                    Text(
-                        text = noteSummary.noteAbstract
-                    )
-                }
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(5.dp)
+                )
+                Text(
+                    text = noteSummary.noteAbstract
+                )
             }
         }
-        // TODO: milestone 2 step 7
+    }
+    // TODO: milestone 2 step 7
+}
+
+@Composable
+fun NotePage(
+    userState: UserState,
+    modifier: Modifier = Modifier,
+    onClick: (Int) -> Unit,
+    navOut: () -> Unit,
+
+
+
+    viewModel: NoteListViewModel = viewModel()
+) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var changeGreetings by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val noteDB = NoteDatabase.getDatabase(context)
+    val preferKV = PreferenceKV(context, userState.uid)
+    val preferState by preferKV.appPreferencesFlow.collectAsState(AppPreferences())
+
+
+    var sortOrder: Sort = preferState.sorting// TODO: milestone 1 step 10
+
+    val onClickMenu: () -> Unit = {
+        scope.launch {
+            if (drawerState.isClosed) {
+                drawerState.open()
+            } else {
+                drawerState.close()
+            }
+        }
     }
 
-    @Composable
-    fun NotePage(
-        userState: UserState,
-        modifier: Modifier = Modifier,
-        onClick: (Int) -> Unit,
-        navOut: () -> Unit,
-
-
-
-        viewModel: NoteListViewModel = viewModel()
-    ) {
-        val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-        val scope = rememberCoroutineScope()
-        var changeGreetings by remember { mutableStateOf(false) }
-
-        val context = LocalContext.current
-        val noteDB = NoteDatabase.getDatabase(context)
-        val preferKV = PreferenceKV(context, userState.uid)
-        val preferState by preferKV.appPreferencesFlow.collectAsState(AppPreferences())
-
-
-        var sortOrder: Sort = preferState.sorting// TODO: milestone 1 step 10
-
-        val onClickMenu: () -> Unit = {
-            scope.launch {
-                if (drawerState.isClosed) {
-                    drawerState.open()
-                } else {
-                    drawerState.close()
-                }
-            }
-        }
-
-        ModalNavigationDrawer(
-            drawerContent = {
-                ModalDrawerSheet {
-                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                        NavigationDrawerItem(
-                            label = { Text(stringResource(R.string.edit_greetings_button)) },
-                            selected = false,
-                            icon = {
-                                Icon(
-                                    Icons.Outlined.Edit,
-                                    contentDescription = stringResource(R.string.edit_greetings_description)
-                                )
-                            },
-                            onClick = { changeGreetings = true; onClickMenu() },
-                        )
-                        HorizontalDivider(thickness = 1.dp, modifier = Modifier.padding(10.dp))
-
-                        Sort.values().forEach { option ->
-                            NavigationDrawerItem(
-                                label = { Text(option.label) },       // use enum's label
-                                selected = (option == preferState.sorting),     // highlight current choice
-                                icon = { Icon(Icons.Outlined.Sort, contentDescription = null) },
-                                onClick = {
-                                    scope.launch {
-                                        // persist new sort to DataStore
-                                        PreferenceKV(context, userState.uid).saveSorting(option)
-                                        drawerState.close()
-                                    }
-                                }
+    ModalNavigationDrawer(
+        drawerContent = {
+            ModalDrawerSheet {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    NavigationDrawerItem(
+                        label = { Text(stringResource(R.string.edit_greetings_button)) },
+                        selected = false,
+                        icon = {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = stringResource(R.string.edit_greetings_description)
                             )
-                        }
+                        },
+                        onClick = { changeGreetings = true; onClickMenu() },
+                    )
+                    HorizontalDivider(thickness = 1.dp, modifier = Modifier.padding(10.dp))
 
-                        // TODO: milestone 1 step 10
-                    }
-                }
-            },
-            drawerState = drawerState
-        ) {
-            NoteListPage(
-                preferState,
-                noteDB,
-                userState,
-                sortOrder,
-                modifier,
-                onClickMenu,
-                onClick,
-                navOut,
-                viewModel
-            )
-        }
-        ChangeGreetingsDialog(changeGreetings, preferState, preferKV) {
-            changeGreetings = false
-        }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun NoteListPage(
-        preferState: AppPreferences,
-        noteDB: NoteDatabase,
-        userState: UserState,
-        sortOrder: Sort,
-        modifier: Modifier = Modifier,
-        onClickMenu: () -> Unit,
-        onClick: (Int) -> Unit,
-        navOut: () -> Unit,
-        viewModel: NoteListViewModel = viewModel()
-
-
-    ) {
-        var searchPattern by rememberSaveable { mutableStateOf("") }
-        val scope = rememberCoroutineScope()
-
-        var showDeleteSheet by rememberSaveable { mutableStateOf(false) }
-        var deleteNoteId by remember { mutableStateOf<Int?>(null) }
-        var deleteNoteTitle by remember { mutableStateOf("") }
-
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-
-
-        // TODO: milestone 1 step 1 --- Pre-install notes for testing ---
-        LaunchedEffect(Unit) {
-            val countNote = noteDB.noteDao().userNoteCount(userState.id)
-            if (countNote == 0 && userState.name == "large") {
-                for (i in 1..1000) {
-                    launch {
-                        noteDB.noteDao().upsertNote(
-                            Note(
-                                noteTitle = "Note $i",
-                                noteAbstract = "This is Note $i",
-                                noteDetail = "Welcome to Note $i.",
-                                notePath = null,
-                                lastEdited = Calendar.getInstance().time,
-                                priority = i % 3,
-                                remindDate = null,
-                            ), userState.id
+                    Sort.values().forEach { option ->
+                        NavigationDrawerItem(
+                            label = { Text(option.label) },       // use enum's label
+                            selected = (option == preferState.sorting),     // highlight current choice
+                            icon = { Icon(Icons.Outlined.Sort, contentDescription = null) },
+                            onClick = {
+                                scope.launch {
+                                    // persist new sort to DataStore
+                                    PreferenceKV(context, userState.uid).saveSorting(option)
+                                    drawerState.close()
+                                }
+                            }
                         )
                     }
+
+                    // TODO: milestone 1 step 10
+                }
+            }
+        },
+        drawerState = drawerState
+    ) {
+        NoteListPage(
+            preferState,
+            noteDB,
+            userState,
+            sortOrder,
+            modifier,
+            onClickMenu,
+            onClick,
+            navOut,
+            viewModel
+        )
+    }
+    ChangeGreetingsDialog(changeGreetings, preferState, preferKV) {
+        changeGreetings = false
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NoteListPage(
+    preferState: AppPreferences,
+    noteDB: NoteDatabase,
+    userState: UserState,
+    sortOrder: Sort,
+    modifier: Modifier = Modifier,
+    onClickMenu: () -> Unit,
+    onClick: (Int) -> Unit,
+    navOut: () -> Unit,
+    viewModel: NoteListViewModel = viewModel()
+
+
+) {
+    var searchPattern by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    var showDeleteSheet by rememberSaveable { mutableStateOf(false) }
+    var deleteNoteId by remember { mutableStateOf<Int?>(null) }
+    var deleteNoteTitle by remember { mutableStateOf("") }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+
+
+    // TODO: milestone 1 step 1 --- Pre-install notes for testing ---
+    LaunchedEffect(Unit) {
+        val countNote = noteDB.noteDao().userNoteCount(userState.id)
+        if (countNote == 0 && userState.name == "large") {
+            for (i in 1..1000) {
+                launch {
+                    noteDB.noteDao().upsertNote(
+                        Note(
+                            noteTitle = "Note $i",
+                            noteAbstract = "This is Note $i",
+                            noteDetail = "Welcome to Note $i.",
+                            notePath = null,
+                            lastEdited = Calendar.getInstance().time,
+                            priority = i % 3,
+                            remindDate = null,
+                        ), userState.id
+                    )
                 }
             }
         }
+    }
 
 
 //step 5
-        val pager = remember(searchPattern,sortOrder) {
-            Pager(
-                config = PagingConfig(pageSize = 20, prefetchDistance = 10)
+    val pager = remember(searchPattern,sortOrder) {
+        Pager(
+            config = PagingConfig(pageSize = 20, prefetchDistance = 10)
+        ) {
+            // Use the PagingSource from your DAO
+            noteDB.userDao().getUsersWithNoteListsByIdPaged(
+                id = userState.id,
+                pattern = searchPattern,
+                sort = sortOrder.sort,            // DESC
+                sortBy = sortOrder.sortBy
+            )
+        }
+    }
+    val noteItems = pager.flow.collectAsLazyPagingItems()
+
+    val noteList by viewModel.noteListState.collectAsState()
+
+    val onSearch: (String) -> Unit = {q ->
+        searchPattern = q.trim()
+    }
+
+    Scaffold(
+        floatingActionButton = {
+
+            val scope = rememberCoroutineScope()
+            FloatingActionButton(
+                onClick = {  onClick(0)},
+                modifier = Modifier.semantics {
+
+                }
             ) {
-                // Use the PagingSource from your DAO
-                noteDB.userDao().getUsersWithNoteListsByIdPaged(
-                    id = userState.id,
-                    pattern = searchPattern,
-                    sort = sortOrder.sort,            // DESC
-                    sortBy = sortOrder.sortBy
-                )
-            }
-        }
-        val noteItems = pager.flow.collectAsLazyPagingItems()
-
-        val noteList by viewModel.noteListState.collectAsState()
-
-        val onSearch: (String) -> Unit = {q ->
-            searchPattern = q.trim()
-        }
-
-        Scaffold(
-            floatingActionButton = {
-
-                val scope = rememberCoroutineScope()
-                FloatingActionButton(
-                    onClick = {  onClick(0)},
-                    modifier = Modifier.semantics {
-
-                    }
-                   ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_note_button))
             }
-            },
-            topBar = { TopBar(navOut, onClickMenu, userState, noteDB) }) { innerPadding ->
-            Column(
-                modifier = modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .testTag(stringResource(R.string.note_list_column)),
-                verticalArrangement = Arrangement.Top,
-            ) {
-                // TODO: milestone 1 step 8: add the search bar here
-                NoteSearchBar(
-                    noteDB = noteDB,
-                    userId = userState.id,
-                    viewModel = viewModel,
-                    onSearch = onSearch,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                )
+        },
+        topBar = { TopBar(navOut, onClickMenu, userState, noteDB) }) { innerPadding ->
+        Column(
+            modifier = modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .testTag(stringResource(R.string.note_list_column)),
+            verticalArrangement = Arrangement.Top,
+        ) {
+            // TODO: milestone 1 step 8: add the search bar here
+            NoteSearchBar(
+                noteDB = noteDB,
+                userId = userState.id,
+                viewModel = viewModel,
+                onSearch = onSearch,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
+            )
 
-                LazyColumn(
-                    modifier = modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Top
-                ) { // milestone 1 step 4
-                    item {
-                        GreetingText(name = userState.name, greeting = preferState.greeting)
-                    }
-                    // TODO: milestone 1 step 4: display all the NoteSummary in noteList with NoteCard
-                    // Step 4: display the first 10 notes
-                    items(noteItems.itemCount) { index ->
-                        val summary = noteItems[index]
-                        if (summary != null) {
+            LazyColumn(
+                modifier = modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Top
+            ) { // milestone 1 step 4
+                item {
+                    GreetingText(name = userState.name, greeting = preferState.greeting)
+                }
+                // TODO: milestone 1 step 4: display all the NoteSummary in noteList with NoteCard
+                // Step 4: display the first 10 notes
+                items(noteItems.itemCount) { index ->
+                    val summary = noteItems[index]
+                    if (summary != null) {
                         NoteCard(
                             noteSummary = summary,
                             noteDB = noteDB,
@@ -657,48 +657,44 @@ private fun Priority?.toDbInt(): Int = when (this) {
                             }
                         )
 
-                            }
                     }
-
                 }
 
             }
+
+        }
 
 
     }
 
 
-        if (showDeleteSheet && deleteNoteId != null) {
-            ModalBottomSheet(
-                sheetState = sheetState,
-                onDismissRequest = { showDeleteSheet = false }
-            ) {
+    if (showDeleteSheet && deleteNoteId != null) {
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = { showDeleteSheet = false }
+        ) {
 
-                ListItem(
-                    leadingContent = { Icon(Icons.Default.Delete, contentDescription = "Delete Note", tint = Color.Red) },
-                    headlineContent = { Text(text = "Delete Note: $deleteNoteTitle",fontWeight = FontWeight.Bold ,color = Color.Red) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            val id = deleteNoteId?: return@clickable
-                            scope.launch {
-                                withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    noteDB.deleteDao().deleteNotes(listOf(id))
-                                }
-                                showDeleteSheet = false
-                                deleteNoteId = null
-                                deleteNoteTitle = ""
+            ListItem(
+                leadingContent = { Icon(Icons.Default.Delete, contentDescription = "Delete Note", tint = Color.Red) },
+                headlineContent = { Text(text = "Delete Note: $deleteNoteTitle",fontWeight = FontWeight.Bold ,color = Color.Red) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val id = deleteNoteId?: return@clickable
+                        scope.launch {
+                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                noteDB.deleteDao().deleteNotes(listOf(id))
                             }
+                            showDeleteSheet = false
+                            deleteNoteId = null
+                            deleteNoteTitle = ""
                         }
-                )
-                Spacer(Modifier.height(24.dp))
-            }
+                    }
+            )
+            Spacer(Modifier.height(24.dp))
         }
+    }
 
 
 
 }
-
-
-
-
