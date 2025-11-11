@@ -7,6 +7,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -464,7 +465,7 @@ fun NotePage(
     val preferState by preferKV.appPreferencesFlow.collectAsState(AppPreferences())
 
 
-    var sortOrder: Sort = preferState.sorting// TODO: milestone 1 step 10
+    val sortOrder = preferState.sorting
 
     val onClickMenu: () -> Unit = {
         scope.launch {
@@ -619,8 +620,7 @@ fun NoteListPage(
         Column(
             modifier = modifier
                 .padding(innerPadding)
-                .fillMaxSize()
-                .testTag(stringResource(R.string.note_list_column)),
+                .fillMaxSize(),
             verticalArrangement = Arrangement.Top,
         ) {
             // TODO: milestone 1 step 8: add the search bar here
@@ -635,15 +635,21 @@ fun NoteListPage(
             )
 
             LazyColumn(
-                modifier = modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Top
+                modifier = modifier.fillMaxSize()
+                    .testTag(stringResource(R.string.note_list_column)),
+                verticalArrangement = Arrangement.Top,
+                contentPadding = PaddingValues(bottom = 88.dp)
+
             ) { // milestone 1 step 4
                 item {
                     GreetingText(name = userState.name, greeting = preferState.greeting)
                 }
                 // TODO: milestone 1 step 4: display all the NoteSummary in noteList with NoteCard
                 // Step 4: display the first 10 notes
-                items(noteItems.itemCount) { index ->
+                items(
+                    count = noteItems.itemCount,
+                    key = { idx -> noteItems[idx]?.noteId ?: idx } // ✅ stable keys
+                ) { index ->
                     val summary = noteItems[index]
                     if (summary != null) {
                         NoteCard(
@@ -656,7 +662,6 @@ fun NoteListPage(
                                 showDeleteSheet = true
                             }
                         )
-
                     }
                 }
 
