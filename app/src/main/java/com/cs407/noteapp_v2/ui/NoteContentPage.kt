@@ -79,12 +79,20 @@ import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.withContext
 
 private const val LARGE_NOTE_THRESHOLD = 1024
+
+private fun Priority?.toDbInt(): Int = when (this) {
+    Priority.LOW    -> 0
+    Priority.MEDIUM -> 1
+    Priority.HIGH   -> 2
+    else            -> -1
+}
+
 fun saveContent(
     userId: Int,
     noteId: Int,
     title: String,
     detail: String,
-    priority: Int?,
+    priority: Priority?,
     remindDate: Date?,
     noteDB: NoteDatabase,
     context: Context,
@@ -110,23 +118,21 @@ fun saveContent(
                 noteId = noteId,
                 noteTitle = title.ifBlank { "New Note" },
                 noteAbstract = noteAbstract,
-                noteDetail =  if (detail.length > 1024) null else detail,
-                notePath = null,                                   // ignore per spec
-                lastEdited = now,          // now
-                priority =  priority ?: -1,                                    // ignore per spec
-                remindDate = remindDate                                  // ignore per spec
+                noteDetail = if (detail.length > 1024) null else detail,
+                notePath = null,
+                lastEdited = now,
+                priority = priority.toDbInt(),
+                remindDate = remindDate
             )
-
-            // Upsert and link to userId (Room impl handles insert vs update)
-            val realId = noteDB.noteDao().upsertNote(note, userId)
+            noteDB.noteDao().upsertNote(note, userId)
         }
 
-        // Back to the list after save
-        withContext(kotlinx.coroutines.Dispatchers.Main) {
-            navBack()
+        withContext(Dispatchers.Main) { navBack() }
         }
 
-    }
+
+
+
     // TODO: milestone 2 step 3
 }
 
@@ -248,14 +254,15 @@ fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,     
             onClick = { expanded = !expanded },
             label = {
                 Text(
-                    text = currentPriority?.let { p ->
-                        when (p) {
+                    text = currentPriority?.let {
+                        when (it) {
                             Priority.LOW    -> "Low"
                             Priority.MEDIUM -> "Medium"
                             Priority.HIGH   -> "High"
                             Priority.NONE   -> "Set Priority"
                         }
-                    } ?: "Set Priority"
+                    } ?: "Set Priority",color = MaterialTheme.colorScheme.onSurface
+
                 )
             },
 
@@ -264,30 +271,10 @@ fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,     
                 selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
             )
         )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        )
-        {
-            DropdownMenuItem(
-                text = { Text("None") },
-                onClick = { onPrioritySelected(Priority.NONE); expanded = false }
-            )
-            listOf(Priority.LOW, Priority.MEDIUM, Priority.HIGH).forEach { priority ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            when (priority) {
-                                Priority.LOW -> "Low"
-                                Priority.MEDIUM -> "Medium"
-                                Priority.HIGH -> "High"
-                                Priority.NONE -> "None"   // unreachable here but keeps it exhaustive
-                            }
-                        )
-                    },
-                    onClick = { onPrioritySelected(priority); expanded = false }
-                )
-            }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text("Low") },    onClick = { onPrioritySelected(Priority.LOW);    expanded = false })
+            DropdownMenuItem(text = { Text("Medium") }, onClick = { onPrioritySelected(Priority.MEDIUM); expanded = false })
+            DropdownMenuItem(text = { Text("High") },   onClick = { onPrioritySelected(Priority.HIGH);   expanded = false })
         }
     }
 }
@@ -365,13 +352,14 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
                             noteId = noteId,
                             title = title,
                             detail = detail,
-                            priority = selectedPriority?.ordinal ?: -1,
+                            priority = selectedPriority,
                             remindDate = null,
                             noteDB = noteDB,
                             context = context,
                             coroutineScope = scope,
                             navBack = navBack
                         )
+
                     },
                     modifier = Modifier
                         .padding(16.dp)

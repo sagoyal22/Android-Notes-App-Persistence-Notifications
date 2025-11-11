@@ -376,11 +376,18 @@ fun NoteSearchBar(
 
 @Composable
 private fun priorityColor(priority: Int?): Color = when (priority) {
-    Priority.HIGH.ordinal   -> MaterialTheme.colorScheme.errorContainer
-    Priority.MEDIUM.ordinal -> MaterialTheme.colorScheme.tertiaryContainer
-    Priority.LOW.ordinal    -> MaterialTheme.colorScheme.secondaryContainer
-    Priority.NONE.ordinal   -> MaterialTheme.colorScheme.surfaceVariant
-    else                    -> MaterialTheme.colorScheme.surfaceVariant
+    2 -> MaterialTheme.colorScheme.errorContainer       // High
+    1 -> MaterialTheme.colorScheme.tertiaryContainer    // Medium
+    0 -> MaterialTheme.colorScheme.secondaryContainer   // Low
+    else -> MaterialTheme.colorScheme.surfaceVariant
+}
+
+// ADD THIS (for saving logic)
+private fun Priority?.toDbInt(): Int = when (this) {
+    Priority.LOW    -> 0
+    Priority.MEDIUM -> 1
+    Priority.HIGH   -> 2
+    else            -> -1
 }
     @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
     @SuppressLint("SimpleDateFormat")
