@@ -16,14 +16,18 @@ import kotlinx.serialization.json.Json
 enum class Sort(val sort: Int, val sortBy: String, val label: String) {
     NOTE_ID_DESC(0, "noteID", "Sort by Note ID descending"),
     NOTE_ID_ASC(1, "noteID", "Sort by Note ID ascending"),
+
     NOTE_TITLE_DESC(0, "noteTitle", "Sort by Note Title descending"),
     NOTE_TITLE_ASC(1, "noteTitle", "Sort by Note Title ascending"),
+
     LAST_EDITED_DESC(0, "lastEdited", "Sort by Last Edited descending"),
     LAST_EDITED_ASC(1, "lastEdited", "Sort by Last Edited ascending"),
-    PRIORITY_ASC(0, "priority", "Sort by Priority descending"),
-    PRIORITY_DESC(1, "priority", "Sort by Priority ascending"),
-    REMIND_ASC(0, "remindDate", "Sort by Reminding Date descending"),
-    REMIND_DESC(1, "remindDate", "Sort by Reminding Date ascending");
+
+    PRIORITY_DESC(0, "priority", "Sort by Priority descending"),
+    PRIORITY_ASC(1, "priority", "Sort by Priority ascending"),
+
+    REMIND_DESC(0, "remindDate", "Sort by Reminding Date descending"),
+    REMIND_ASC(1, "remindDate", "Sort by Reminding Date ascending");
 }
 
 @Serializable
