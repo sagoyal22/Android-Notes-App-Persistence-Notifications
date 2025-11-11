@@ -635,7 +635,8 @@ private fun Priority?.toDbInt(): Int = when (this) {
                 )
 
                 LazyColumn(
-                    modifier = modifier.fillMaxSize(),
+                    modifier = modifier.fillMaxSize()
+                        .testTag(stringResource(R.string.note_list_column)),
                     verticalArrangement = Arrangement.Top
                 ) { // milestone 1 step 4
                     item {
