@@ -124,7 +124,19 @@ fun saveContent(
                 priority = priority.toDbInt(),
                 remindDate = remindDate
             )
-            noteDB.noteDao().upsertNote(note, userId)
+            val realId =noteDB.noteDao().upsertNote(note, userId)
+
+
+            if (isLarge) {
+                // Write the content to a private app file
+                val safeName = "note-${userId}-${realId}-${now.time}.txt"
+                val file = File(context.filesDir, safeName)
+                file.writeText(detail)
+
+                // Update the record with the file path
+                val withPath = note.copy(noteId = realId, notePath = file.absolutePath)
+                noteDB.noteDao().upsertNote(withPath, userId)
+            }
         }
 
         withContext(Dispatchers.Main) { navBack() }
