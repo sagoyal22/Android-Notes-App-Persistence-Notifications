@@ -89,17 +89,7 @@ fun NoteApp(
             )
         }
 
-        composable(
-            route = "${NoteScreen.NoteContent.name}/{noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getInt("noteId") ?: 0
-            NoteContentPage(
-                userId = userState.id,
-                noteId = noteId,
-                navBack = { navController.popBackStack() }
-            )
+
         }
 
     }
-}

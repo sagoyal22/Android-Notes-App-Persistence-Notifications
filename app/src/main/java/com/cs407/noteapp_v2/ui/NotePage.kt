@@ -584,25 +584,25 @@ fun NoteListPage(
 
 // Map your enum -> DAO literals (do NOT change DAO)
     val (daoSortBy, daoSortFlag) = when (sortOrder.label) {
-        "Sort by Note Title ascending"   -> "noteTitle"  to 1
-        "Sort by Note Title descending"  -> "noteTitle"  to 0
-        "Sort by Note ID ascending"      -> "noteID"     to 1   // NOTE the capital D
-        "Sort by Note ID descending"     -> "noteID"     to 0
-        "Sort by Last Edited ascending"  -> "lastEdited" to 1
-        "Sort by Last Edited descending" -> "lastEdited" to 0
-        "Sort by Priority ascending"     -> "priority"   to 1
-        "Sort by Priority descending"    -> "priority"   to 0
+        "Sort by Note Title ascending"      -> "noteTitle"  to 1
+        "Sort by Note Title descending"     -> "noteTitle"  to 0
+        "Sort by Note ID ascending"         -> "noteID"     to 1   // NOTE the capital D
+        "Sort by Note ID descending"        -> "noteID"     to 0
+        "Sort by Last Edited ascending"     -> "lastEdited" to 1
+        "Sort by Last Edited descending"    -> "lastEdited" to 0
+        "Sort by Priority ascending"        -> "priority"   to 1
+        "Sort by Priority descending"       -> "priority"   to 0
         "Sort by Reminding Date ascending"  -> "remindDate" to 1
         "Sort by Reminding Date descending" -> "remindDate" to 0
-        else                              -> "lastEdited" to 0   // default: newest first
+        else                                 -> "lastEdited" to 0
     }
 //step 5
-    val pager = remember(searchPattern,sortOrder) {
+    val pager = remember(searchPattern, daoSortBy, daoSortFlag) {
         Pager(
             config = PagingConfig(pageSize = 20, prefetchDistance = 10)
         ) {
             // Use the PagingSource from your DAO
-            val fixedSort = if (sortOrder.sort == 0) 1 else 0
+
             noteDB.userDao().getUsersWithNoteListsByIdPaged(
                 id = userState.id,
                 pattern = searchPattern,

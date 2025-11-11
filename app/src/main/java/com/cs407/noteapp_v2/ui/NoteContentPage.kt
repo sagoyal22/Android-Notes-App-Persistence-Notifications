@@ -262,7 +262,7 @@ fun PriorityChip(modifier: Modifier = Modifier, currentPriority: Priority?,     
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier.testTag(stringResource(R.string.priority_chip))) {
         InputChip(
-            selected = expanded,
+            selected = currentPriority != null,
             onClick = { expanded = !expanded },
             label = {
                 Text(
@@ -365,7 +365,7 @@ fun NoteContentPage(userId: Int, noteId: Int, navBack: () -> Unit, modifier: Mod
                             title = title,
                             detail = detail,
                             priority = selectedPriority,
-                            remindDate = null,
+                            remindDate = remindDate,
                             noteDB = noteDB,
                             context = context,
                             coroutineScope = scope,
