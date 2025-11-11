@@ -12,7 +12,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-@Serializable
 enum class Sort(val sort: Int, val sortBy: String, val label: String) {
     NOTE_ID_DESC(0, "noteID", "Sort by Note ID descending"),
     NOTE_ID_ASC(1, "noteID", "Sort by Note ID ascending"),
@@ -23,6 +22,7 @@ enum class Sort(val sort: Int, val sortBy: String, val label: String) {
     LAST_EDITED_DESC(0, "lastEdited", "Sort by Last Edited descending"),
     LAST_EDITED_ASC(1, "lastEdited", "Sort by Last Edited ascending"),
 
+    // ✅ fixed: ASC uses 1, DESC uses 0
     PRIORITY_DESC(0, "priority", "Sort by Priority descending"),
     PRIORITY_ASC(1, "priority", "Sort by Priority ascending"),
 

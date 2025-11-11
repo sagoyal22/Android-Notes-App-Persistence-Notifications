@@ -519,12 +519,12 @@ fun NotePage(
             preferState,
             noteDB,
             userState,
-            sortOrder,
-            modifier,
-            onClickMenu,
-            onClick,
-            navOut,
-            viewModel
+            modifier = modifier,
+            onClickMenu = onClickMenu,
+            onClick = onClick,
+            navOut = navOut,
+            viewModel = viewModel
+
         )
     }
     ChangeGreetingsDialog(changeGreetings, preferState, preferKV) {
@@ -538,7 +538,6 @@ fun NoteListPage(
     preferState: AppPreferences,
     noteDB: NoteDatabase,
     userState: UserState,
-    sortOrder: Sort,
     modifier: Modifier = Modifier,
     onClickMenu: () -> Unit,
     onClick: (Int) -> Unit,
@@ -580,22 +579,12 @@ fun NoteListPage(
         }
     }
 
-    val sortOrder = preferState.sorting
+    val sortChoice = preferState.sorting
+    val daoSortBy   = sortChoice.sortBy   // exact token the DAO expects
+    val daoSortFlag = sortChoice.sort
 
 // Map your enum -> DAO literals (do NOT change DAO)
-    val (daoSortBy, daoSortFlag) = when (sortOrder.label) {
-        "Sort by Note Title ascending"      -> "noteTitle"  to 1
-        "Sort by Note Title descending"     -> "noteTitle"  to 0
-        "Sort by Note ID ascending"         -> "noteID"     to 1   // NOTE the capital D
-        "Sort by Note ID descending"        -> "noteID"     to 0
-        "Sort by Last Edited ascending"     -> "lastEdited" to 1
-        "Sort by Last Edited descending"    -> "lastEdited" to 0
-        "Sort by Priority ascending"        -> "priority"   to 1
-        "Sort by Priority descending"       -> "priority"   to 0
-        "Sort by Reminding Date ascending"  -> "remindDate" to 1
-        "Sort by Reminding Date descending" -> "remindDate" to 0
-        else                                 -> "lastEdited" to 0
-    }
+
 //step 5
     val pager = remember(searchPattern, daoSortBy, daoSortFlag) {
         Pager(
@@ -715,6 +704,7 @@ fun NoteListPage(
                             deleteNoteTitle = ""
                         }
                     }
+
             )
             Spacer(Modifier.height(24.dp))
         }
