@@ -501,9 +501,12 @@ fun NotePage(
                             icon = { Icon(Icons.Outlined.Sort, contentDescription = null) },
                             onClick = {
                                 scope.launch {
+                                    drawerState.close()
+                                }
+                                scope.launch {
                                     // persist new sort to DataStore
                                     PreferenceKV(context, userState.uid).saveSorting(option)
-                                    drawerState.close()
+
                                 }
                             }
                         )
