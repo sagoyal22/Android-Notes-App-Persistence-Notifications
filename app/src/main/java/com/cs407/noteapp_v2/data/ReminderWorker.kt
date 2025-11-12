@@ -7,7 +7,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.Date
+import java.util.TreeMap
 
 private const val NOTIFICATION_TITLE_FALLBACK = "Reminder"
 const val CHANNEL_ID_REMINDER = "channel_reminder"
@@ -20,14 +24,74 @@ class ReminderWorker(appContext: Context, params: WorkerParameters)
     private val notificationManager =
         appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+    companion object {
+        // Ordered by (remindTime, noteId)
+        private val reminderMap = TreeMap<TreeNode, NodeContent>(nodeCompare)
+        private val mutex = Mutex()
+
+        // --- safe helpers used by UI / repositories ---
+
+        suspend fun checkEmpty(): Boolean = mutex.withLock { reminderMap.isEmpty() }
+
+        suspend fun readSmallestKey(): TreeNode = mutex.withLock { reminderMap.firstKey() }
+
+        suspend fun readValue(key: TreeNode): NodeContent =
+            mutex.withLock { reminderMap.getOrDefault(key, NodeContent()) }
+
+        suspend fun upsertReminder(key: TreeNode, note: NodeContent) {
+            mutex.withLock {
+                removeReminderWithIDNoLock(key.noteId) // ensure unique by noteId
+                reminderMap[key] = note
+            }
+        }
+
+        suspend fun removeReminder(key: TreeNode) {
+            mutex.withLock { reminderMap.remove(key) }
+        }
+
+        suspend fun removeReminderWithID(noteID: Int) {
+            mutex.withLock { removeReminderWithIDNoLock(noteID) }
+        }
+
+        // --- internal: must be called under mutex ---
+        private fun removeReminderWithIDNoLock(noteID: Int) {
+            var removingKey: TreeNode? = null
+            reminderMap.forEach { (k, _) ->
+                if (k.noteId == noteID) {
+                    removingKey = k
+                    return@forEach
+                }
+            }
+            if (removingKey != null) reminderMap.remove(removingKey)
+        }
+    }
+
+
     override suspend fun doWork(): Result {
-        // 1) make sure channel exists
         createReminderNotificationChannel()
 
-        // 2) when a reminder is due, post one (example call)
-        //    You’ll call this with your real data:
-        //    postReminderNotification(noteId, title, abstract)
-        return Result.success()
+        // Poll forever (assignment spec)
+        while (true) {
+            // If nothing scheduled, just sleep
+            if (!checkEmpty()) {
+                val smallest = readSmallestKey()
+                val now = Date()
+                // If it's due (remindTime <= now), notify & remove it
+                if (!smallest.remindTime.after(now)) {
+                    val content = readValue(smallest)
+                    postReminderNotification(
+                        noteId = smallest.noteId,
+                        title  = content.title,
+                        text   = content.abstract
+                    )
+                    removeReminder(smallest)
+                }
+            }
+            // Check every 1 second
+            delay(1000)
+        }
+        // (Unreached in this assignment; WorkManager will eventually stop it)
+        // return Result.success()
     }
 
     /** Zybooks-style channel creation */
