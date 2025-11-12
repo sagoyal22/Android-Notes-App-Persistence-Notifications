@@ -7,8 +7,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import java.util.Date
 
 private const val NOTIFICATION_TITLE_FALLBACK = "Reminder"
+const val CHANNEL_ID_REMINDER = "channel_reminder"
+
 
 class ReminderWorker(appContext: Context, params: WorkerParameters)
     : CoroutineWorker(appContext, params) {
@@ -60,7 +63,25 @@ class ReminderWorker(appContext: Context, params: WorkerParameters)
             NotificationManagerCompat.from(applicationContext).notify(noteId, n)
         }
     }
+
+
 }
+
+data class TreeNode(
+    val remindTime: Date,
+    val noteId: Int
+)
+
+val nodeCompare = Comparator<TreeNode> { a, b ->
+    val t = a.remindTime.compareTo(b.remindTime)
+    if (t != 0) t else a.noteId.compareTo(b.noteId)
+}
+
+data class NodeContent(
+    val title: String = "",
+    val abstract: String = "",
+    val priority: Int = -2
+)
 
 
 // TODO: milestone 3
