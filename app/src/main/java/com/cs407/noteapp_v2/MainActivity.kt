@@ -39,11 +39,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permission = Manifest.permission.POST_NOTIFICATIONS
-            if (ActivityCompat.checkSelfPermission(this, permission)
-                == PackageManager.PERMISSION_DENIED
-            ) {
-                permissionRequestLauncher.launch(permission)
+            val perm = Manifest.permission.POST_NOTIFICATIONS
+            if (ActivityCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
+                permissionRequestLauncher.launch(perm)
             }
         }
 
