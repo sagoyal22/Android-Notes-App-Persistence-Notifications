@@ -423,7 +423,9 @@ fun NoteCard(
             Text(
                 text = noteSummary.noteTitle,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.testTag(stringResource(R.string.note_title_display))
+                modifier = Modifier
+                    .testTag(stringResource(R.string.note_title_display))
+                    .clickable { onClick(noteSummary.noteId) }
             )
             Row {
                 Text(
