@@ -128,7 +128,7 @@ fun NoteSearchBar(
             noteDB.userDao().getUsersWithNoteListsSearchFlow(
                 id = userId,
                 pattern = q,
-                sort = 0,                 // DESC
+                sort = 0,
                 sortBy = "lastEdited"
             )
         )
@@ -147,6 +147,7 @@ fun NoteSearchBar(
                     onQueryChange = { newText ->
                         textFieldState.edit { replace(0, length, newText) }
                         onChangeText(newText)
+                        onSearch(newText)
                         expanded = true
                     },
                     onSearch = {
@@ -383,7 +384,6 @@ private fun priorityColor(priority: Int?): Color = when (priority) {
     else -> MaterialTheme.colorScheme.surfaceVariant
 }
 
-// ADD THIS (for saving logic)
 private fun Priority?.toDbInt(): Int = when (this) {
     Priority.LOW    -> 0
     Priority.MEDIUM -> 1
@@ -496,15 +496,14 @@ fun NotePage(
 
                     Sort.values().forEach { option ->
                         NavigationDrawerItem(
-                            label = { Text(option.label) },       // use enum's label
-                            selected = (option == preferState.sorting),     // highlight current choice
+                            label = { Text(option.label) },
+                            selected = (option == preferState.sorting),
                             icon = { Icon(Icons.Outlined.Sort, contentDescription = null) },
                             onClick = {
                                 scope.launch {
                                     drawerState.close()
                                 }
                                 scope.launch {
-                                    // persist new sort to DataStore
                                     PreferenceKV(context, userState.uid).saveSorting(option)
 
                                 }
