@@ -16,6 +16,9 @@ import java.util.TreeMap
 
 private const val NOTIFICATION_TITLE_FALLBACK = "Reminder"
 const val CHANNEL_ID_REMINDER = "channel_reminder"
+const val CHANNEL_ID_REMINDER_LOW = "channel_reminder_low"
+const val CHANNEL_ID_REMINDER_DEFAULT = "channel_reminder_default"
+const val CHANNEL_ID_REMINDER_HIGH = "channel_reminder_high"
 
 class ReminderWorker(appContext: Context, params: WorkerParameters)
     : CoroutineWorker(appContext, params) {
@@ -69,6 +72,7 @@ class ReminderWorker(appContext: Context, params: WorkerParameters)
         // Simple polling loop; tests mostly bypass this and call upsertReminder directly.
         while (true) {
             if (!checkEmpty()) {
+
                 val smallest = readSmallestKey()
                 val now = Date()
                 if (!smallest.remindTime.after(now)) {
@@ -85,44 +89,52 @@ class ReminderWorker(appContext: Context, params: WorkerParameters)
 
     private fun createReminderNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID_REMINDER,
-                "Reminders",
+            val low = NotificationChannel(
+                CHANNEL_ID_REMINDER_LOW, "Reminders (Low)",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply { description = "Low-importance note reminders" }
+
+            val def = NotificationChannel(
+                CHANNEL_ID_REMINDER_DEFAULT, "Reminders (Default)",
                 NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications for note reminders"
-            }
-            notificationManager.createNotificationChannel(channel)
+            ).apply { description = "Default-importance note reminders" }
+
+            val high = NotificationChannel(
+                CHANNEL_ID_REMINDER_HIGH, "Reminders (High)",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = "High-importance note reminders" }
+
+            notificationManager.createNotificationChannel(low)
+            notificationManager.createNotificationChannel(def)
+            notificationManager.createNotificationChannel(high)
         }
     }
 
     // ---- REQUIRED by tests: exact name and params ----
     fun postTimerNotification(key: TreeNode, value: NodeContent) {
-        // Map our app’s priority Int to NotificationCompat priority
-        val builderPriority = when (value.priority) {
-            2  -> NotificationCompat.PRIORITY_HIGH   // High
-            1  -> NotificationCompat.PRIORITY_DEFAULT// Medium
-            0  -> NotificationCompat.PRIORITY_LOW    // Low
-            else -> NotificationCompat.PRIORITY_DEFAULT
+        val (channelId, builderPriority) = when (value.priority) {
+            2  -> CHANNEL_ID_REMINDER_HIGH    to NotificationCompat.PRIORITY_HIGH    // High
+            1  -> CHANNEL_ID_REMINDER_DEFAULT to NotificationCompat.PRIORITY_DEFAULT // Medium
+            0  -> CHANNEL_ID_REMINDER_LOW     to NotificationCompat.PRIORITY_LOW     // Low
+            else -> CHANNEL_ID_REMINDER_DEFAULT to NotificationCompat.PRIORITY_DEFAULT
         }
 
         val title = value.title.ifBlank { NOTIFICATION_TITLE_FALLBACK }
         val text  = value.abstract.ifBlank { "You have a note to review." }
 
-        val n = NotificationCompat.Builder(applicationContext, CHANNEL_ID_REMINDER)
+        val n = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(title)
             .setContentText(text)
-            // For Android 7.0 and lower, the builder priority is what the test inspects.
-            .setPriority(builderPriority)
+            .setPriority(builderPriority) // ensures correct value on pre-O (what tests check)
             .build()
 
         val mgr = NotificationManagerCompat.from(applicationContext)
         if (mgr.areNotificationsEnabled()) {
-            // Use noteId as notification id so each is unique
             mgr.notify(key.noteId, n)
         }
     }
+
 }
 
 // --- types used by tests and your UI wiring ---
