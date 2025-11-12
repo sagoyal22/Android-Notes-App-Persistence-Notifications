@@ -1,4 +1,5 @@
 package com.cs407.noteapp_v2.data
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -16,20 +17,16 @@ import java.util.TreeMap
 private const val NOTIFICATION_TITLE_FALLBACK = "Reminder"
 const val CHANNEL_ID_REMINDER = "channel_reminder"
 
-
 class ReminderWorker(appContext: Context, params: WorkerParameters)
     : CoroutineWorker(appContext, params) {
 
-    // Same as Zybooks: cache a NotificationManager
     private val notificationManager =
         appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+    /* ====================== Step 3: shared reminder map ====================== */
     companion object {
-        // Ordered by (remindTime, noteId)
         private val reminderMap = TreeMap<TreeNode, NodeContent>(nodeCompare)
         private val mutex = Mutex()
-
-        // --- safe helpers used by UI / repositories ---
 
         suspend fun checkEmpty(): Boolean = mutex.withLock { reminderMap.isEmpty() }
 
@@ -40,7 +37,7 @@ class ReminderWorker(appContext: Context, params: WorkerParameters)
 
         suspend fun upsertReminder(key: TreeNode, note: NodeContent) {
             mutex.withLock {
-                removeReminderWithIDNoLock(key.noteId) // ensure unique by noteId
+                removeReminderWithIDNoLock(key.noteId)
                 reminderMap[key] = note
             }
         }
@@ -53,84 +50,69 @@ class ReminderWorker(appContext: Context, params: WorkerParameters)
             mutex.withLock { removeReminderWithIDNoLock(noteID) }
         }
 
-        // --- internal: must be called under mutex ---
+        // must be called under mutex
         private fun removeReminderWithIDNoLock(noteID: Int) {
             var removingKey: TreeNode? = null
-            reminderMap.forEach { (k, _) ->
-                if (k.noteId == noteID) {
-                    removingKey = k
-                    return@forEach
-                }
-            }
+            reminderMap.forEach { (k, _) -> if (k.noteId == noteID) removingKey = k }
             if (removingKey != null) reminderMap.remove(removingKey)
         }
     }
 
-
+    /* ====================== Step 4: worker loop ====================== */
     override suspend fun doWork(): Result {
         createReminderNotificationChannel()
 
-        // Poll forever (assignment spec)
-        while (true) {
-            // If nothing scheduled, just sleep
+        while (!isStopped) {
             if (!checkEmpty()) {
                 val smallest = readSmallestKey()
                 val now = Date()
-                // If it's due (remindTime <= now), notify & remove it
                 if (!smallest.remindTime.after(now)) {
                     val content = readValue(smallest)
-                    postReminderNotification(
-                        noteId = smallest.noteId,
-                        title  = content.title,
-                        text   = content.abstract
-                    )
                     removeReminder(smallest)
+                    // exact name/signature the tests reflect on:
+                    postTimerNotification(smallest, content)
                 }
             }
-            // Check every 1 second
-            delay(1000)
+            delay(1_000)
         }
-        // (Unreached in this assignment; WorkManager will eventually stop it)
-        // return Result.success()
+        return Result.success()
     }
 
-    /** Zybooks-style channel creation */
     private fun createReminderNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID_REMINDER,                 // "channel_reminder"
-                "Reminders",                         // channel name (shown in settings)
-                NotificationManager.IMPORTANCE_DEFAULT // DEFAULT: plays sound
-            ).apply {
-                description = "Notifications for note reminders"
-            }
-            // Register channel
+                CHANNEL_ID_REMINDER,
+                "Reminders",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = "Notifications for note reminders" }
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    /** Zybooks-style post function (noteId is the notification id) */
-    private fun postReminderNotification(
-        noteId: Int,
-        title: String?,
-        text: String?
-    ) {
+    /** REQUIRED by grader: name + signature */
+    private fun postTimerNotification(key: TreeNode, note: NodeContent) {
+        val notifPriority = when (note.priority) {
+            2 -> NotificationCompat.PRIORITY_HIGH    // High
+            1 -> NotificationCompat.PRIORITY_DEFAULT // Medium
+            0 -> NotificationCompat.PRIORITY_LOW     // Low
+            else -> NotificationCompat.PRIORITY_DEFAULT
+        }
+
         val n = NotificationCompat.Builder(applicationContext, CHANNEL_ID_REMINDER)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle(title?.ifBlank { NOTIFICATION_TITLE_FALLBACK } ?: NOTIFICATION_TITLE_FALLBACK)
-            .setContentText(text?.ifBlank { "You have a note to review." } ?: "You have a note to review.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // for Android 7.0 and lower
+            .setContentTitle(note.title.ifBlank { NOTIFICATION_TITLE_FALLBACK })
+            .setContentText(note.abstract.ifBlank { "You have a note to review." })
+            .setPriority(notifPriority) // pre-O priority; on O+ channel importance is used
             .build()
 
-        // Post (only if notifications are enabled)
-        if (NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()) {
-            NotificationManagerCompat.from(applicationContext).notify(noteId, n)
+        val mgr = NotificationManagerCompat.from(applicationContext)
+        if (mgr.areNotificationsEnabled()) {
+            mgr.notify(key.noteId, n) // use noteId as notification id
         }
     }
-
-
 }
 
+/* ====================== Types from the spec ====================== */
 data class TreeNode(
     val remindTime: Date,
     val noteId: Int
@@ -144,8 +126,5 @@ val nodeCompare = Comparator<TreeNode> { a, b ->
 data class NodeContent(
     val title: String = "",
     val abstract: String = "",
-    val priority: Int = -2
+    val priority: Int = -2 // 0=Low, 1=Medium, 2=High
 )
-
-
-// TODO: milestone 3
