@@ -1,3 +1,4 @@
+
 package com.cs407.noteapp_v2.ui
 
 import android.annotation.SuppressLint
@@ -423,9 +424,7 @@ fun NoteCard(
             Text(
                 text = noteSummary.noteTitle,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .testTag(stringResource(R.string.note_title_display))
-                    .clickable { onClick(noteSummary.noteId) }
+                modifier = Modifier.testTag(stringResource(R.string.note_title_display))
             )
             Row {
                 Text(

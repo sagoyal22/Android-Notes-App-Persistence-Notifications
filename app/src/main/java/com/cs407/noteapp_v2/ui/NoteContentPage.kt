@@ -140,7 +140,7 @@ fun saveContent(
         }
 
         withContext(Dispatchers.Main) { navBack() }
-        }
+    }
 
 
 
@@ -253,7 +253,7 @@ fun InputRemindDateChip(
             )
         }
     }
-    }
+}
 
 
 @Composable
